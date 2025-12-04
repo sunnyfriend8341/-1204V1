@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>115年度預算營運分析報告 - 深度版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #0984e3;
+            --success: #00b894;
+            --warning: #f1c40f;
+            --danger: #d63031;
+            --light: #dfe6e9;
+            --bg: #f5f7fa;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: #2d3436;
+            line-height: 1.6;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border-radius: 16px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--accent);
+            padding-bottom: 25px;
+            margin-bottom: 40px;
+        }
+        .header h1 { margin: 0; color: var(--primary); font-size: 2rem; letter-spacing: 1px; }
+        .header .meta { color: #636e72; font-size: 0.95rem; margin-top: 5px; }
+        
+        .btn-print {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-print:hover { background-color: var(--secondary); transform: translateY(-2px); }
+
+        /* KPI Cards */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        .kpi-card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #eee;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 6px; height: 100%;
+            background-color: var(--accent);
+        }
+        .kpi-label { font-size: 0.85rem; color: #636e72; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .kpi-number { font-size: 2.2rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
+        .kpi-diff { font-size: 0.95rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .text-up { color: var(--success); }
+        .text-down { color: var(--danger); }
+        .text-flat { color: #636e72; }
+
+        /* Text Sections */
+        .text-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            border-left: 5px solid var(--accent);
+        }
+        .text-section h3 { margin-top: 0; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .text-section p { margin-bottom: 10px; color: #444; text-align: justify; }
+
+        /* Charts Layout */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        .chart-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #eee;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-header {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 25px; /* 增加標題與圖表的距離 */
+            padding-left: 10px;
+            border-left: 4px solid var(--warning);
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        /* Tabs Section */
+        .tabs-container {
+            margin-top: 20px;
+        }
+        .tabs-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 0;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .tab-btn {
+            padding: 12px 25px;
+            background-color: #eee;
+            border: none;
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #636e72;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { background-color: #e0e0e0; }
+        .tab-btn.active {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+        }
+        .tab-content {
+            background: white;
+            border: 2px solid #eee; /* 改用邊框而非背景色，看起來更乾淨 */
+            border-top: 5px solid var(--primary);
+            border-radius: 0 10px 10px 10px;
+            padding: 30px;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active { display: block; }
+
+        /* Detail Tables */
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .detail-table th, .detail-table td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-table th {
+            text-align: left;
+            background-color: #f9f9f9;
+            color: var(--primary);
+            font-weight: bold;
+        }
+        .detail-table tr:last-child td { border-bottom: none; font-weight: bold; font-size: 1.1rem; background-color: #f0fff4; }
+        .row-highlight { background-color: #fffbf0; font-weight: bold; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; }
+            .btn-print { display: none; }
+            .tabs-nav { display: none; } /* 列印時可能需要特殊處理，這裡先隱藏導航，顯示所有內容或特定內容 */
+            .tab-content { display: block !important; border: none; page-break-inside: avoid; margin-bottom: 20px; border-top: 1px solid #ccc; }
+            .chart-box { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>115年度 預算營運分析報告</h1>
+            <div class="meta">資料來源：115年預算營運統計表 | 單位：新台幣千元</div>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ 列印報告</button>
+    </div>
+
+    <div class="text-section">
+        <h3>🚀 管理摘要 (Executive Summary)</h3>
+        <p><strong>總體表現：</strong> 115年度集團預算營收設定為 <strong>9.04億元</strong>，較去年實際數成長 <strong>5.3%</strong>。儘管核心業務面臨挑戰，透過新事業開發成功補足缺口，預計稅後淨利可達 <strong>2.92億元</strong> (YoY +2.7%)。</p>
+        <p><strong>策略轉型：</strong> 本年度預算呈現明顯的「結構調整」。核心的「事廢」與「石綿專案」因市場競爭與專案週期因素衰退，集團策略性地以高毛利的「空瓶回收」新業務及「高溫滅菌」產能擴張作為新的成長引擎。</p>
+    </div>
+
+    <div class="kpi-row">
+        <div class="kpi-card" style="border-left-color: #0984e3;">
+            <div class="kpi-label">集團合併營收</div>
+            <div class="kpi-number">904,321</div>
+            <div class="kpi-diff text-up">▲ 5.3% <span style="font-size:0.8rem;color:#999;font-weight:normal;">(+$45,798)</span></div>
+        </div>
+        <div class="kpi-card" style="border-left-color: #00b894;">
+            <div class="kpi-label">本期稅後淨利</div>
+            <div class="kpi-number">292,535</div>
+            <div class="kpi-diff text-up">▲ 2.7% <span style="font-size:0.8rem;color:#999;font-weight:normal;">(EPS 6.36)</span></div>
+        </div>
+        <div class="kpi-card" style="border-left-color: #f1c40f;">
+            <div class="kpi-label">整體毛利率</div>
+            <div class="kpi-number">57.4%</div>
+            <div class="kpi-diff text-down">▼ 2.0% <span style="font-size:0.8rem;color:#999;font-weight:normal;">(114年: 59.4%)</span></div>
+        </div>
+        <div class="kpi-card" style="border-left-color: #d63031;">
+            <div class="kpi-label">事廢營收 (核心)</div>
+            <div class="kpi-number">365,990</div>
+            <div class="kpi-diff text-down">▼ 12.7% <span style="font-size:0.8rem;color:#999;font-weight:normal;">(-$53,196)</span></div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-box" style="grid-column: 1 / -1;">
+            <div class="chart-header">📊 115年營收變動因子分析 (Waterfall Analysis)</div>
+            <div class="chart-container" style="height: 400px;">
+                <canvas id="waterfallChart"></canvas>
+            </div>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 10px; text-align: center;">
+                圖表說明：展示從去年實際數(左)如何透過各部門的增減，達成今年預算數(右)的過程。
+            </p>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-box">
+            <div class="chart-header">📉 事業部獲利能力矩陣 (Bubble Matrix)</div>
+            <div class="chart-container">
+                <canvas id="matrixChart"></canvas>
+            </div>
+            <p style="font-size: 0.8rem; color: #999;">*X軸:營收規模, Y軸:毛利率, 圓圈大小:營收貢獻度</p>
+        </div>
+        <div class="chart-box">
+            <div class="chart-header">🥧 115年營收組成佔比</div>
+            <div class="chart-container">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-section" style="border-left-color: var(--primary); background: #fff;">
+        <h3>📑 部門別損益細目 (Department P&L Details)</h3>
+        <p>請點擊下方頁籤查看各事業單位的詳細預算結構與獲利能力分析。</p>
+        
+        <div class="tabs-container">
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="openTab(event, 'Consolidated')">集團合併總表</button>
+                <button class="tab-btn" onclick="openTab(event, 'IndWaste')">青新-事廢 (核心)</button>
+                <button class="tab-btn" onclick="openTab(event, 'NewBiz')">青新-新業務 (空瓶/滅菌)</button>
+                <button class="tab-btn" onclick="openTab(event, 'Bio')">青新-生醫</button>
+                <button class="tab-btn" onclick="openTab(event, 'Subsidiaries')">子公司 (良衛/正新)</button>
+            </div>
+
+            <div id="Consolidated" class="tab-content active">
+                <table class="detail-table">
+                    <thead>
+                        <tr style="background: #eee;">
+                            <th>項目</th>
+                            <th style="text-align:right">115年預算</th>
+                            <th style="text-align:right">114年實際</th>
+                            <th style="text-align:right">差異金額</th>
+                            <th style="text-align:right">成長率 (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>營業收入</td><td>904,321</td><td>858,522</td><td class="text-up">+45,799</td><td class="text-up">+5.3%</td></tr>
+                        <tr><td>營業成本</td><td>385,091</td><td>348,750</td><td class="text-down">+36,341</td><td>+10.4%</td></tr>
+                        <tr class="row-highlight"><td>營業毛利</td><td>519,230</td><td>509,771</td><td class="text-up">+9,459</td><td class="text-up">+1.9%</td></tr>
+                        <tr><td>毛利率</td><td>57.4%</td><td>59.4%</td><td class="text-down">-2.0pp</td><td>-</td></tr>
+                        <tr><td>營業費用</td><td>152,659</td><td>157,078</td><td class="text-up">-4,419</td><td class="text-up">-2.8%</td></tr>
+                        <tr><td>營業利益</td><td>366,571</td><td>352,693</td><td class="text-up">+13,878</td><td class="text-up">+3.9%</td></tr>
+                        <tr><td>稅後淨利</td><td>292,535</td><td>284,923</td><td class="text-up">+7,612</td><td class="text-up">+2.7%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="IndWaste" class="tab-content">
+                <h4 style="margin-top:0; color:var(--danger);">⚠️ 核心業務警示：營收雙位數衰退</h4>
+                <table class="detail-table">
+                    <thead>
+                        <tr style="background: #eee;">
+                            <th>項目 (青新-事廢)</th>
+                            <th style="text-align:right">115年預算</th>
+                            <th style="text-align:right">114年實際</th>
+                            <th style="text-align:right">差異金額</th>
+                            <th style="text-align:right">變動 (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>營業收入</td><td>365,990</td><td>419,186</td><td class="text-down">-53,196</td><td class="text-down">-12.7%</td></tr>
+                        <tr><td>營業成本</td><td>64,417</td><td>85,513</td><td class="text-up">-21,096</td><td class="text-up">-24.7%</td></tr>
+                        <tr class="row-highlight"><td>營業毛利</td><td>301,572</td><td>333,673</td><td class="text-down">-32,101</td><td class="text-down">-9.6%</td></tr>
+                        <tr><td>毛利率</td><td>82.4%</td><td>79.6%</td><td class="text-up">+2.8pp</td><td>-</td></tr>
+                        <tr><td>營業利益</td><td>236,601</td><td>320,446</td><td class="text-down">-83,845</td><td class="text-down">-26.2%</td></tr>
+                    </tbody>
+                </table>
+                <p style="font-size:0.9rem; color:#666; margin-top:10px;">*註：營收下滑可能源於市場價格競爭或專案結束，但成本控制得宜使毛利率反而上升。</p>
+            </div>
+
+            <div id="NewBiz" class="tab-content">
+                <h4 style="margin-top:0; color:var(--success);">🌟 成長雙引擎：空瓶回收 + 高溫滅菌</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div>
+                        <h5 style="border-bottom:2px solid var(--accent); padding-bottom:5px;">空瓶回收 (新)</h5>
+                        <table class="detail-table">
+                            <tr><td>營業收入</td><td>79,956</td></tr>
+                            <tr><td>營業毛利</td><td>24,062</td></tr>
+                            <tr><td>毛利率</td><td>30.1%</td></tr>
+                            <tr><td>營業利益</td><td>16,017</td></tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h5 style="border-bottom:2px solid var(--accent); padding-bottom:5px;">高溫滅菌 (擴產)</h5>
+                        <table class="detail-table">
+                            <tr><td>營業收入</td><td>30,640</td></tr>
+                            <tr><td>YoY成長</td><td class="text-up">+84.6%</td></tr>
+                            <tr><td>毛利率</td><td>5.3%</td></tr>
+                            <tr><td>營業利益</td><td>-2,547</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <p style="font-size:0.9rem; color:#666; margin-top:10px;">*分析：空瓶回收帶來巨大營收貢獻，但毛利率僅30%，低於集團平均，是造成整體毛利率稀釋的主因。高溫滅菌營收翻倍，但目前營業利益仍為負，需注意規模經濟效益何時顯現。</p>
+            </div>
+
+            <div id="Bio" class="tab-content">
+                <h4 style="margin-top:0;">青新-生醫部門：穩健現金牛</h4>
+                <table class="detail-table">
+                    <thead>
+                        <tr style="background: #eee;">
+                            <th>項目</th>
+                            <th style="text-align:right">115年預算</th>
+                            <th style="text-align:right">114年實際</th>
+                            <th style="text-align:right">差異金額</th>
+                            <th style="text-align:right">變動 (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>營業收入</td><td>110,321</td><td>106,017</td><td class="text-up">+4,303</td><td class="text-up">+4.1%</td></tr>
+                        <tr><td>營業成本</td><td>44,056</td><td>41,515</td><td class="text-down">+2,541</td><td>+6.1%</td></tr>
+                        <tr class="row-highlight"><td>營業毛利</td><td>66,264</td><td>64,502</td><td class="text-up">+1,762</td><td class="text-up">+2.7%</td></tr>
+                        <tr><td>毛利率</td><td>60.1%</td><td>60.8%</td><td class="text-down">-0.7pp</td><td>-</td></tr>
+                        <tr><td>營業利益</td><td>37,646</td><td>51,530</td><td class="text-down">-13,883</td><td class="text-down">-26.9%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+             <div id="Subsidiaries" class="tab-content">
+                <h4 style="margin-top:0;">子公司概況：良衛與正新</h4>
+                <table class="detail-table">
+                    <thead>
+                        <tr style="background: #eee;">
+                            <th>公司</th>
+                            <th style="text-align:right">115預算營收</th>
+                            <th style="text-align:right">114實際營收</th>
+                            <th style="text-align:right">差異</th>
+                            <th style="text-align:right">毛利率</th>
+                            <th style="text-align:right">淨利率</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>良衛-生醫</strong></td>
+                            <td>207,197</td>
+                            <td>204,294</td>
+                            <td class="text-up">+1.4%</td>
+                            <td>51.3%</td>
+                            <td>30.8%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>正新-生醫</strong></td>
+                            <td>79,697</td>
+                            <td>79,773</td>
+                            <td class="text-down">-0.1%</td>
+                            <td>46.3%</td>
+                            <td>19.1%</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td><strong>子公司合計</strong></td>
+                            <td>286,894</td>
+                            <td>284,067</td>
+                            <td class="text-up">+1.0%</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="font-size:0.9rem; color:#666; margin-top:10px;">*分析：子公司營運進入成熟期，預算編列保守，主要扮演穩定的獲利貢獻角色，成長動能需依賴母公司新事業。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-section" style="border-left-color: var(--danger); background: #fff5f5;">
+        <h3 style="color: var(--danger);">⚠️ 策略風險與管理建議</h3>
+        <ul>
+            <li><strong>毛利率稀釋風險：</strong> 隨著高毛利的「事廢」營收佔比下降 (48% -> 40%)，低毛利的「新業務」佔比上升，集團整體毛利率結構正在改變。建議針對空瓶回收業務進行更精細的成本控管，以提升毛利水平。</li>
+            <li><strong>石綿專案持續虧損：</strong> 預算顯示石綿專案營收 3,362萬，但營業利益為負值 (-486萬)。需評估此專案是否具備政策性戰略意義，否則應考慮逐步縮減或進行流程優化以止損。</li>
+            <li><strong>高溫滅菌廠獲利時程：</strong> 雖然營收翻倍，但預算仍編列虧損 (-254萬)。需密切追蹤產能利用率與單位固定成本的攤提狀況，設定明確的損益兩平時間點 (Break-even Point)。</li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+    // Tab Switching Function
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+        
+        // Trigger specific animation or redraw if needed
+        document.getElementById(tabName).classList.add("active");
+    }
+
+    // Chart Global Config
+    Chart.register(ChartDataLabels);
+    Chart.defaults.font.family = '"Microsoft JhengHei", "Helvetica Neue", "Helvetica", "Arial", sans-serif';
+    Chart.defaults.color = '#555';
+    Chart.defaults.font.size = 13;
+
+    // 1. Waterfall Chart (Bridge)
+    const ctxWater = document.getElementById('waterfallChart').getContext('2d');
+    new Chart(ctxWater, {
+        type: 'bar',
+        data: {
+            labels: ['114年實際', '事廢(減)', '石綿(減)', '空瓶(新)', '滅菌(增)', '其他', '115年預算'],
+            datasets: [{
+                label: '金額',
+                data: [
+                    [0, 858522],      // 114 Actual
+                    [805326, 858522], // Ind Waste Drop (-53196)
+                    [795016, 805326], // Asbestos Drop (-10310)
+                    [795016, 874972], // Bottle Add (+79956)
+                    [874972, 889015], // Heat Add (+14043)
+                    [889015, 904321], // Others (+15306)
+                    [0, 904321]       // 115 Budget
+                ],
+                backgroundColor: [
+                    '#95a5a6', // Gray
+                    '#d63031', // Red
+                    '#d63031', // Red
+                    '#00b894', // Green
+                    '#00b894', // Green
+                    '#55efc4', // Light Green
+                    '#0984e3'  // Blue
+                ],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            let val = ctx.raw[1] - ctx.raw[0];
+                            if(ctx.dataIndex === 1 || ctx.dataIndex === 2) val = -val; // Visual fix for drops
+                            if(ctx.dataIndex === 0 || ctx.dataIndex === 6) val = ctx.raw[1];
+                            return '金額: ' + val.toLocaleString() + ' k';
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#444',
+                    anchor: 'end',
+                    align: 'top',
+                    offset: -5,
+                    font: { weight: 'bold' },
+                    formatter: (value, ctx) => {
+                        let val = value[1] - value[0];
+                        if(ctx.dataIndex === 1 || ctx.dataIndex === 2) val = -val;
+                        if(ctx.dataIndex === 0 || ctx.dataIndex === 6) val = value[1];
+                        
+                        // Add + sign for positive changes (excluding totals)
+                        let prefix = (val > 0 && ctx.dataIndex !== 0 && ctx.dataIndex !== 6) ? '+' : '';
+                        
+                        // Convert to K format for cleaner look if needed, or keep comma
+                        return prefix + Math.round(val/1000) + 'm'; 
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 750000, // Zoom in
+                    title: { display: true, text: '金額 (千元)' }
+                }
+            }
+        }
+    });
+
+    // 2. Matrix Chart
+    const ctxMatrix = document.getElementById('matrixChart').getContext('2d');
+    new Chart(ctxMatrix, {
+        type: 'bubble',
+        data: {
+            datasets: [
+                { label: '青新-事廢', data: [{x: 365990, y: 82.4, r: 35}], backgroundColor: '#d63031' },
+                { label: '青新-空瓶', data: [{x: 79956, y: 30.1, r: 15}], backgroundColor: '#f1c40f' },
+                { label: '良衛-生醫', data: [{x: 207197, y: 51.3, r: 25}], backgroundColor: '#0984e3' },
+                { label: '正新-生醫', data: [{x: 79697, y: 46.3, r: 12}], backgroundColor: '#6c5ce7' },
+                { label: '青新-生醫', data: [{x: 110321, y: 60.1, r: 18}], backgroundColor: '#00b894' },
+                { label: '青新-石綿', data: [{x: 33621, y: -0.9, r: 8}], backgroundColor: '#636e72' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                datalabels: {
+                    align: 'top',
+                    color: '#2d3436',
+                    font: { weight: 'bold', size: 11 },
+                    formatter: function(value, context) {
+                        return context.dataset.label;
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: 營收 $${ctx.raw.x.toLocaleString()}k, 毛利 ${ctx.raw.y}%`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: '預算營收 (千元)' },
+                    type: 'logarithmic' // 使用對數座標避免小泡泡擠在一起
+                },
+                y: {
+                    title: { display: true, text: '毛利率 (%)' },
+                    min: -10, max: 100
+                }
+            }
+        }
+    });
+
+    // 3. Pie Chart
+    const ctxPie = document.getElementById('pieChart').getContext('2d');
+    new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+            labels: ['青新-事廢', '良衛-生醫', '青新-生醫', '正新-生醫', '青新-空瓶', '其他'],
+            datasets: [{
+                data: [365990, 207197, 110321, 79697, 79956, 61160],
+                backgroundColor: ['#d63031', '#0984e3', '#00b894', '#6c5ce7', '#f1c40f', '#b2bec3']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold' },
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart._metasets[ctx.datasetIndex].total;
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        return percentage;
+                    },
+                    display: function(context) {
+                        return context.dataset.data[context.dataIndex] > 50000; // 小於50000不顯示標籤
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
